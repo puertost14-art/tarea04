@@ -86,9 +86,10 @@ int main(int argc, char **argv)
     if (thread_count <= 0 || per_thread <= 0) {
         fprintf(stderr, "threads and requests must be positive\n");
         return EXIT_FAILURE;
-    }
-
-    clock_t t0 = clock(); // cambio: t0; tiempo de inicio
+    }   
+    
+    struct timespec t0, t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
     pthread_t *tids = calloc((size_t)thread_count, sizeof *tids);
     worker_args_t *args = calloc((size_t)thread_count, sizeof *args);
 
@@ -122,11 +123,12 @@ int main(int argc, char **argv)
             total += args[i].completed;
     }
 
-    clock_t t1 = clock(); // cambio: t1, tiempo de finalización
-    double time = (double)(t1 - t0) * 1000.0 / CLOCKS_PER_SEC;
-    
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double ms = (t1.tv_sec - t0.tv_sec) * 1000.0
+                + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+
     printf("requests completed: %lu\n", total);
-    printf("needed time: %f\n", time);
+    printf("needed time: %.3f ms\n", ms);
 
     free(tids);
     free(args);
