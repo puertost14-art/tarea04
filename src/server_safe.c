@@ -13,10 +13,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#define N 5
+#define N 32
 #define POISON_PILL -1
-#define TOTAL_REQUESTS 150
-
 
 // la conexion del cliente necesito un file descriptor y un id de conexion
 typedef struct {
@@ -69,7 +67,7 @@ void push_queue(queue_t *qp, int fd, unsigned long connection_id) {
     qp->index_in = (qp->index_in + 1) % N; // aumentamos el index_in
 
     pthread_mutex_unlock( &qp->mutex );
-    sem_post( &qp->full );
+    sem_post( &qp->full ); // se añade un nuevo elemento (se suma 1)
 }
 
 client_conn_t pop_queue(queue_t *qp){
@@ -149,8 +147,8 @@ void *consumer(void *arg){
 int main(int argc, char *argv[]) {
     
     // validamos que estén los 3 argumentos que necesitamos
-    if (argc != 3) {
-        fprintf(stderr, "uso: %s <puerto> <num_consumers>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "uso: %s <puerto> <num_consumers> <total_requests>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -158,6 +156,7 @@ int main(int argc, char *argv[]) {
     // atoi = de valor char a valor int
     unsigned short port = (unsigned short)atoi(argv[1]);
     int num_consumers = atoi(argv[2]);
+    long total_requests = atol(argv[3]);
 
     // definición de la variable server_fd
     int server_fd = nu_listen(port, 64);
@@ -177,7 +176,7 @@ int main(int argc, char *argv[]) {
     producer_args_t producer_args = {
         .queue = &queue,
         .server_fd = server_fd,
-        .total_request = TOTAL_REQUESTS,
+        .total_request = total_requests,
         .num_consumers = num_consumers
     };
 
